@@ -1,0 +1,153 @@
+-------------------------------------------------------------------------- QUERIES ------------------------------------------------------------------------------
+
+1) Find the person(s) who was/were vaccinated after 16.06.2021 in the cities whose name starts with "G" or "V".
+
+SELECT * FROM person 
+WHERE person_id IN (SELECT person_id FROM vaccination_record WHERE vaccination_date > '2021-06-16') AND (name like 'G%' OR name like 'V%');
+
+Data Output : 
+
+4;"Volkan";"Patlar";"Male";45;"D4E5-4567-45";"İzmir";"Karşıyaka";"Cumhuriyet Mah. 35570 Karşıyaka/İzmir"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2) Find the healthcare professionals who were responsible for vaccinating the "Biontech" vaccine to the people who are elder than 50.
+
+SELECT * FROM healthcare_professional 
+WHERE professional_id IN(SELECT professional_id FROM vaccination_record WHERE person_id IN(SELECT person_id FROM person WHERE age > 50) AND vaccine_id IN(SELECT vaccine_id FROM vaccine WHERE name='Biontech')) 
+ORDER BY professional_id;
+
+Data Output : 
+
+2;4;"Murat";"Günel"
+4;7;"Oytun";"Erbaş"
+5;9;"Uğur";"Şahin"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3) Add a new column named "Country_Code" to the table keeping the vaccine information based on country name (i.e. if the counrty name is Turkey, then the county code is "TR")
+
+ALTER TABLE vaccination_record
+ADD country_code varchar(10) not null default 'TR';
+
+Before query:
+
+"1";2;2;1;"2021-06-14"
+"2";4;2;2;"2021-06-19"
+"3";6;1;4;"2021-06-21"
+"4";8;1;7;"2021-06-11"
+"5";10;1;9;"2021-06-23"
+
+After query:
+
+"1";2;2;1;"2021-06-14";"TR"
+"2";4;2;2;"2021-06-19";"TR"
+"3";6;1;4;"2021-06-21";"TR"
+"4";8;1;7;"2021-06-11";"TR"
+"5";10;1;9;"2021-06-23";"TR"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4) Find the number of people who were vaccinated according to each vaccine type.
+
+SELECT vaccine_id, COUNT(*) as number_of_vaccinated_people FROM vaccination_record GROUP BY vaccine_id 
+ORDER BY vaccine_id ASC;
+
+Data Output:
+
+(vaccine_id;number_of_vaccinated_people)
+1;3
+2;2
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+5) Find the youngest person who was vaccinated with "Sinovac" in "Dokuz Eylül University Hospital".
+
+SELECT * FROM person 
+WHERE person_id IN(SELECT person_id FROM vaccination_record WHERE vaccine_id IN(SELECT vaccine_id FROM vaccine WHERE name='Sinovac') AND professional_id IN(SELECT professional_id FROM healthcare_professional WHERE center_id IN(SELECT center_id FROM medical_center WHERE name='Dokuz Eylül University Hospital')))
+ORDER BY age LIMIT 1;
+
+Data Output :
+
+2;"Gülse";"Güler";"Female";23;"B2C3-2345-23";"İzmir";"Bornova";"Ergene Mah. 35030 Bornova/İzmir"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+6) Find the selected vaccine type, vaccination date and the assigned medical center for the person whose name "Ali Aslan".
+
+SELECT name FROM vaccine 
+WHERE vaccine_id IN(SELECT vaccine_id FROM vaccination_record WHERE person_id IN(SELECT person_id FROM person WHERE name='Ali' AND surname='Aslan'));
+
+Data Output : "Biontech"
+
+SELECT vaccination_date FROM vaccination_record 
+WHERE person_id IN(SELECT person_id FROM person WHERE name='Ali' AND surname='Aslan');
+
+Data Output : "2021-06-23"
+
+SELECT name FROM medical_center 
+WHERE center_id IN(SELECT center_id FROM healthcare_professional WHERE professional_id IN(SELECT professional_id FROM vaccination_record WHERE person_id IN(SELECT person_id FROM person WHERE name='Ali' AND surname='Aslan')));
+
+Data Output : "Şişli Etfal Hospital"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+7) Find the most risky city according to state of health.
+
+SELECT city, COUNT(*) AS number_of_people_at_risk FROM person 
+WHERE person_id IN(SELECT person_id FROM hes WHERE state_of_health='risky') GROUP BY city
+ORDER BY number_of_people_at_risk DESC LIMIT 1;
+
+Data Output: 
+
+(city;number_of_people_at_risk)
+"İzmir";2
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+8) Update the state of health of the person whose phone number is "05534849876" as "Risky".
+
+UPDATE hes
+SET state_of_health = 'risky' 
+WHERE phone_number='05534849876';
+
+Before query:
+
+"9";9;"05534849876";"I9J0-9012-90";"unvaccinated";"risk-free"
+
+After query:
+
+"9";9;"05534849876";"I9J0-9012-90";"unvaccinated";"risky"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+9) Delete the people over 65 who have not yet been vaccinated.
+
+DELETE FROM person
+WHERE age > 65 AND person_id IN(SELECT person_id FROM hes WHERE vaccination_info='unvaccinated');
+
+After query:
+
+"7";"Arif Mert";"Aslan";"Male";78;"G7H8-7890-78";"İstanbul";"Kadıköy";"Caddebostan Mah. 34728 Kadıköy/İstanbul"
+"9";"Halil İbrahim";"Doğan";"Male";90;"I9J0-9012-90";"İstanbul";"Üsküdar";"Acıbadem Mah. 34660 Üsküdar/İstanbul"
+
+deleted from person table.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+10) Add a new vaccine type named "Sputnik V" produced in Russia.
+
+INSERT into vaccine(name, origin)
+VALUES
+	('Sputnik V', 'Russia');
+
+Before query:
+
+"1";"Biontech";"Germany"
+"2";"Sinovac";"China"
+
+After query:
+
+"1";"Biontech";"Germany"
+"2";"Sinovac";"China"
+"3";"Sputnik V";"Russia"
