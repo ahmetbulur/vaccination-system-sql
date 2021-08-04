@@ -11,4 +11,4 @@
 
 - Queries :
 
-![queries](queries.png)
+![queries](queries.png) 
